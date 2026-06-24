@@ -24,7 +24,7 @@ const placeOrder = async (req, res) => {
                 product_data: {
                     name: item.name
                 },
-                unit_amount: item.price * 90
+                unit_amount: Math.round(item.price * 100)
             },
             quantity: item.quantity
         }))
@@ -34,7 +34,7 @@ const placeOrder = async (req, res) => {
                 product_data: {
                     name: "Delivery Charges"
                 },
-                unit_amount: 2 * 90
+                unit_amount: 200 // ₹2 delivery fee
             },
             quantity: 1
         })
@@ -46,12 +46,29 @@ const placeOrder = async (req, res) => {
             cancel_url: `${frontend_url}/verify?success=false&orderId=${newOrder._id}`
         })
 
-        res.json({success:true,session_url:session.url})
+        res.json({ success: true, session_url: session.url })
     } catch (error) {
         console.log(error);
-        res.json({success:false,message:"Error"})
-        
+        res.json({ success: false, message: "Error" })
+
     }
 }
 
-export { placeOrder }
+const verifyOrder = async (req, res) => {
+    const { orderId, success } = req.body;
+    try {
+        if (success == "true") {
+            await orderModel.findByIdAndUpdate(orderId, { peyment: true })
+            res.json({success:true,message:"Paid"})
+        }
+        else{
+            await orderModel.findByIdAndDelete(orderId)
+            res.json({success:false,message:"Not Paid"})
+        }
+    } catch (error) {
+        console.log(error)
+        res.json({success:false,message:"Error"})
+    }
+}
+
+export { placeOrder, verifyOrder }
